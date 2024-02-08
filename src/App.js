@@ -53,7 +53,7 @@ const average = (arr) =>
 const KEY = "649ddca9";
 
 export default function App() {
-  const [query, setQuery] = useState("The 100");
+  const [query, setQuery] = useState("");
   const [movies, setMovies] = useState([]);
   const [watched, setWatched] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -94,6 +94,7 @@ export default function App() {
         return;
       }
 
+      handleCloseMovie();
       fetchMovies();
 
       return function () {
@@ -229,6 +230,21 @@ function MovieDetails({ selectedId, handleCloseMovie, onAddWatched, watched }) {
       };
     },
     [title]
+  );
+
+  useEffect(
+    function () {
+      function callback(e) {
+        if (e.code === "Escape") handleCloseMovie();
+      }
+
+      document.addEventListener("keydown", callback);
+
+      return function () {
+        document.removeEventListener("keydown", callback);
+      };
+    },
+    [handleCloseMovie]
   );
 
   return (
