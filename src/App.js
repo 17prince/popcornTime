@@ -226,7 +226,7 @@ function MovieDetails({ selectedId, handleCloseMovie, onAddWatched, watched }) {
 
       // cleanup function
       return function () {
-        document.title = "usePopcorn";
+        document.title = "popcornTime";
       };
     },
     [title]
@@ -326,7 +326,7 @@ function Logo() {
   return (
     <div className="logo">
       <span role="img">🍿</span>
-      <h1>usePopcorn</h1>
+      <h1>popcornTime</h1>
     </div>
   );
 }
