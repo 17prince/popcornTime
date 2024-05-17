@@ -47,6 +47,7 @@ const tempWatchedData = [
   },
 ];
 
+// calculate the average rating
 const average = (arr) =>
   arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
 
@@ -55,15 +56,21 @@ const KEY = "649ddca9";
 export default function App() {
   const [query, setQuery] = useState("");
   const [movies, setMovies] = useState([]);
-  const [watched, setWatched] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [selectedId, setSelectedId] = useState("");
+
+  const [watched, setWatched] = useState(function () {
+    const storedValue = localStorage.getItem("watched");
+
+    return JSON.parse(storedValue);
+  });
 
   useEffect(
     function () {
       const controller = new AbortController();
 
+      // Fetch movies from OMDB api
       async function fetchMovies() {
         try {
           setIsLoading(true);
@@ -103,21 +110,34 @@ export default function App() {
     },
     [query]
   );
+
+  // Select movie to show more details
   function onSelectMovie(imdbID) {
     setSelectedId((selectedId) => (imdbID === selectedId ? null : imdbID));
   }
 
+  // Close details of a movie
   function handleCloseMovie() {
     setSelectedId("");
   }
 
+  // Add movie to watched movie section
   function handleAddWatchedMovie(movie) {
     setWatched((watched) => [...watched, movie]);
   }
 
+  // Delete movie from watched movie section
   function handleDeleteWatchedMovie(id) {
     setWatched((watched) => watched.filter((moive) => moive.imdbID !== id));
   }
+
+  // Adding watched movies to localstorage
+  useEffect(
+    function () {
+      localStorage.setItem("watched", JSON.stringify(watched));
+    },
+    [watched]
+  );
 
   return (
     <>
@@ -158,10 +178,12 @@ export default function App() {
   );
 }
 
+// Loader Component
 function Loader() {
   return <p className="loader">Loading...</p>;
 }
 
+// Component to show detailed movie descriptions
 function MovieDetails({ selectedId, handleCloseMovie, onAddWatched, watched }) {
   const [movie, setMovie] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -185,6 +207,7 @@ function MovieDetails({ selectedId, handleCloseMovie, onAddWatched, watched }) {
     Genre: genre,
   } = movie;
 
+  // Fetch detailed description of a movie
   useEffect(
     function () {
       async function getMovieDetails() {
@@ -204,6 +227,7 @@ function MovieDetails({ selectedId, handleCloseMovie, onAddWatched, watched }) {
     [selectedId]
   );
 
+  // Add movie to watched movie section
   function handleAdd() {
     const newWatchedMoive = {
       imdbID: selectedId,
