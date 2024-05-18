@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import StarRating from "./StarRating";
+import { useLocalStorageState } from "./useLocalStorageState";
+import { useMovies } from "./useMovies";
 const tempMovieData = [
   {
     imdbID: "tt1375666",
@@ -55,61 +57,13 @@ const KEY = "649ddca9";
 
 export default function App() {
   const [query, setQuery] = useState("");
-  const [movies, setMovies] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
   const [selectedId, setSelectedId] = useState("");
 
-  const [watched, setWatched] = useState(function () {
-    const storedValue = localStorage.getItem("watched");
+  // Custom Hook to fetch movies
+  const { movies, isLoading, error } = useMovies(query);
 
-    return JSON.parse(storedValue);
-  });
-
-  useEffect(
-    function () {
-      const controller = new AbortController();
-
-      // Fetch movies from OMDB api
-      async function fetchMovies() {
-        try {
-          setIsLoading(true);
-          setError("");
-          const res = await fetch(
-            `http://www.omdbapi.com/?apikey=${KEY}&s=${query}`,
-            { signal: controller.signal }
-          );
-
-          if (!res)
-            throw new Error("Something went wrong while fetching movies !");
-
-          const data = await res.json();
-
-          if (data.Response === "False") throw new Error("Movie not found !");
-
-          setMovies(data.Search);
-        } catch (err) {
-          if (err.name !== "AbortError") setError(err.message);
-        } finally {
-          setIsLoading(false);
-        }
-      }
-
-      if (query.length < 3) {
-        setMovies([]);
-        setError("");
-        return;
-      }
-
-      handleCloseMovie();
-      fetchMovies();
-
-      return function () {
-        controller.abort();
-      };
-    },
-    [query]
-  );
+  // Custom Hook to save watched moives in local storage
+  const [watched, setWatched] = useLocalStorageState([], "watched");
 
   // Select movie to show more details
   function onSelectMovie(imdbID) {
@@ -130,14 +84,6 @@ export default function App() {
   function handleDeleteWatchedMovie(id) {
     setWatched((watched) => watched.filter((moive) => moive.imdbID !== id));
   }
-
-  // Adding watched movies to localstorage
-  useEffect(
-    function () {
-      localStorage.setItem("watched", JSON.stringify(watched));
-    },
-    [watched]
-  );
 
   return (
     <>
@@ -189,6 +135,15 @@ function MovieDetails({ selectedId, handleCloseMovie, onAddWatched, watched }) {
   const [isLoading, setIsLoading] = useState(false);
   const [userRating, setUserRating] = useState("");
 
+  const countRef = useRef(0);
+
+  useEffect(
+    function () {
+      if (userRating) countRef.current = countRef.current + 1;
+    },
+    [userRating]
+  );
+
   const isWatched = watched.map((moive) => moive.imdbID).includes(selectedId);
   const watchedUserRating = watched.find(
     (moive) => moive.imdbID === selectedId
@@ -237,6 +192,7 @@ function MovieDetails({ selectedId, handleCloseMovie, onAddWatched, watched }) {
       imdbRating: Number(imdbRating),
       runtime: runtime.split(" ").at(0),
       userRating,
+      countRatingDecisions: countRef.current,
     };
 
     onAddWatched(newWatchedMoive);
@@ -357,6 +313,28 @@ function Logo() {
 
 // Search box
 function Search({ query, setQuery }) {
+  const inputEl = useRef(null);
+
+  // auto-focus search bar when Enter key is pressed
+  useEffect(
+    function () {
+      function callback(e) {
+        // if input element is already selected then do nothing
+        if (document.activeElement === inputEl.current) return;
+
+        if (e.code === "Enter") {
+          inputEl.current.focus();
+          setQuery("");
+        }
+      }
+
+      document.addEventListener("keydown", callback);
+
+      return () => document.addEventListener("keydown", callback);
+    },
+    [setQuery]
+  );
+
   return (
     <input
       className="search"
@@ -364,6 +342,7 @@ function Search({ query, setQuery }) {
       placeholder="Search movies..."
       value={query}
       onChange={(e) => setQuery(e.target.value)}
+      ref={inputEl}
     />
   );
 }
