@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import StarRating from "./StarRating";
+import { useKey } from "./useKey";
 import { useLocalStorageState } from "./useLocalStorageState";
 import { useMovies } from "./useMovies";
 const tempMovieData = [
@@ -212,20 +213,8 @@ function MovieDetails({ selectedId, handleCloseMovie, onAddWatched, watched }) {
     [title]
   );
 
-  useEffect(
-    function () {
-      function callback(e) {
-        if (e.code === "Escape") handleCloseMovie();
-      }
-
-      document.addEventListener("keydown", callback);
-
-      return function () {
-        document.removeEventListener("keydown", callback);
-      };
-    },
-    [handleCloseMovie]
-  );
+  // Custom hook to close movie when Escape is pressed
+  useKey("Escape", handleCloseMovie);
 
   return (
     <div className="details">
@@ -315,25 +304,12 @@ function Logo() {
 function Search({ query, setQuery }) {
   const inputEl = useRef(null);
 
-  // auto-focus search bar when Enter key is pressed
-  useEffect(
-    function () {
-      function callback(e) {
-        // if input element is already selected then do nothing
-        if (document.activeElement === inputEl.current) return;
-
-        if (e.code === "Enter") {
-          inputEl.current.focus();
-          setQuery("");
-        }
-      }
-
-      document.addEventListener("keydown", callback);
-
-      return () => document.addEventListener("keydown", callback);
-    },
-    [setQuery]
-  );
+  // Custom hook to auto-focus search bar when Enter key is pressed
+  useKey("Enter", function () {
+    if (document.activeElement === inputEl.current) return;
+    inputEl.current.focus();
+    setQuery("");
+  });
 
   return (
     <input
